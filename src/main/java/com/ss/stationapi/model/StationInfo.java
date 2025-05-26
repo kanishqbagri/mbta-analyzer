@@ -1,5 +1,8 @@
 package com.ss.stationapi.model;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class StationInfo {
     public String getId() {
         return id;
@@ -37,5 +40,16 @@ public class StationInfo {
     private String name;
     private double latitude;
     private double longitude;
-    // getters + setters
+
+    private Set<String> lines = new HashSet<>();
+
+    // Getters and setters...
+
+    public void addLine(String lineId) {
+        lines.add(lineId);
+    }
+
+    public Set<String> getLines() {
+        return lines;
+    }
 }

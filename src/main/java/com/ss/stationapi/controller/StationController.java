@@ -29,8 +29,14 @@ public class StationController {
     }
 
     @GetMapping("/lines")
-    public ResponseEntity<Set<String>> getLinesByStation(@RequestParam("routeID") int routeID){
+    public ResponseEntity<Set<String>> getLinesByStation(@RequestParam("routeID") String routeID){
     Set<String> listOfLines= svc.linesByStation(routeID);
     return ResponseEntity.ok(listOfLines);
     }
+
+//    @GetMapping
+//    public ResponseEntity<Map<String, StationInfo>> getAdjacentStops(){
+//        Map<String, StationInfo> all = svc.getStationInfo();
+//        return null;
+//    }
 }
