@@ -53,4 +53,6 @@ Challenges during Design and Implementation:
 MBTA API filtering limits: The API doesn't provide the adjacency directly. I derived it from ordered stop sequences, and schedules. ADD SPECIFICS
 
 Future Improvements:
+Use of Logger Framework for logging, instead of System Out
+Modularize 
 TBD
