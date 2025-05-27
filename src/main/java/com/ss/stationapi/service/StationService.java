@@ -162,57 +162,64 @@ public class StationService {
         return stopIdToLines;
     }
 
-    private static void fetchAllStopsOnAllRoutes(){
 
-    }
-
-    private static void addToAdjacencyMap(List<String> stopIds) {
-        for (int i = 0; i < stopIds.size(); i++) {
-            String current = stopIds.get(i);
-            adjacencyMap.putIfAbsent(current, new HashSet<>());
-            System.out.println("Building the adjacency list for : " + stopIds);
-            if (i > 0) {
-                String previous = stopIds.get(i - 1);
-                adjacencyMap.get(current).add(previous);
-                adjacencyMap.get(previous).add(current);
-            }
-        }
-    }
 //    private static Map<String, StationInfo> getAdjacentStops1(String route) {
     private static void getAdjacentStops1() {
         System.out.println("Processing adjacent stops for " + stationById.size() + " stations.");
         https://api-v3.mbta.com/schedules?include=stop&sort=stop_sequence&filter[route]=
         // Calling the Route API, with filters and order
+
         try {
-            String lineId = "Red";
-            String url = BASE_URL + "schedules?filter[route]=" + lineId + "&filter[direction_id]=0&sort=stop_sequence";
-            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            for (String lineId : lines) {
+//            String lineId = "Red";
+                String url = BASE_URL + "schedules?filter[route]=" + lineId + "&filter[direction_id]=0&sort=stop_sequence";
+                HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).build();
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            JsonNode root = mapper.readTree(response.body());
-            Set<String> stopIds = new LinkedHashSet<>();
+                JsonNode root = mapper.readTree(response.body());
+                Set<String> stopIds = new LinkedHashSet<>();
 
-            for (JsonNode node : root.path("data")) {
-                JsonNode stopIdNode = node.path("relationships").path("stop").path("data").path("id");
-                if (!stopIdNode.isMissingNode()) {
-                    stopIds.add(stopIdNode.asText());
+                for (JsonNode node : root.path("data")) {
+                    JsonNode stopIdNode = node.path("relationships").path("stop").path("data").path("id");
+                    if (!stopIdNode.isMissingNode()) {
+                        stopIds.add(stopIdNode.asText());
+                    }
                 }
-            }
-          Map<String, String> StopIdToNameMap= new HashMap<>();
-          System.out.println("Size of Stops Ids Map on the Line: " + stopIds.size());
-            for (String stops: stopIds){
-                StationInfo s1=stationById.get(stops);
-                StopIdToNameMap.put(stops, s1.getName());
-                System.out.println(stops + " -- " +s1.getName());
-            }
+                Map<String, String> StopIdToNameMap = new HashMap<>();
+                System.out.println("Size of Stops Ids Map on the Line: " + stopIds.size());
+                for (String stops : stopIds) {
+                    StationInfo s1 = stationById.get(stops);
+                    StopIdToNameMap.put(stops, s1.getName());
+                    System.out.println(stops + " -- " + s1.getName());
+                }
 //            System.out.println(StopIdToNameMap);
-
+// Populate the Adjacent Map, with info on the Neighbor stations
+            populateNeighbors(stopIds, lineId, stationById);
+            }
         }
         catch (Exception e){
             System.err.println("Error fetching stops for route " + ": " + e.getMessage());
         }
     }
 
+    public static void populateNeighbors(Set<String> stopIds, String line, Map<String, StationInfo> stationById) {
+        List<String> orderedStops = new ArrayList<>(stopIds);
+        for (int i = 0; i < orderedStops.size(); i++) {
+            String currentId = orderedStops.get(i);
+            StationInfo currentStation = stationById.get(currentId);
+            if (currentStation == null) continue;
+
+            if (i > 0) {
+                String prevId = orderedStops.get(i - 1);
+                currentStation.addNeighbor(prevId, line);
+            }
+
+            if (i < orderedStops.size() - 1) {
+                String nextId = orderedStops.get(i + 1);
+                currentStation.addNeighbor(nextId, line);
+            }
+        }
+    }
     public static HttpClient getClient() {
         return client;
     }

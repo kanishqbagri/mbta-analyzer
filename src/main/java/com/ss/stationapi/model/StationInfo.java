@@ -1,6 +1,8 @@
 package com.ss.stationapi.model;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class StationInfo {
@@ -51,5 +53,18 @@ public class StationInfo {
 
     public Set<String> getLines() {
         return lines;
+    }
+    private List<NeighborInfo> neighbors = new ArrayList<>();
+    public void addNeighbor(String neighborId, String line) {
+        for (NeighborInfo neighbor : neighbors) {
+            if (neighbor.getStationId().equals(neighborId)) {
+                neighbor.addLine(line);
+                return;
+            }
+        }
+        // If not found, add new neighbor
+        NeighborInfo newNeighbor = new NeighborInfo(neighborId);
+        newNeighbor.addLine(line);
+        neighbors.add(newNeighbor);
     }
 }
