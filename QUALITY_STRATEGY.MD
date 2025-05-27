@@ -15,7 +15,7 @@ The scope of the project includes:
 1. User Interface Testing
 
 ## Testing Strategy
-The Testing Strategy would involve testing the application Manually and Automation using appropriate tools. 
+The testing strategy involves a combination of manual and automated testing using appropriate tools and frameworks. 
 1. Unit Testing: The code level testing will be covered by Unit testing 
 2. Manual Testing: Using a Rest client like Postman / Insomnia to certify the P1 tests that certify the Acceptance criteria for the project.
 2. Automated Testing: Using a framework like Rest Assured to test the APIs for different Data points. The Data points will include different stations with 1,2,3, adjacent Stations etc.
@@ -23,8 +23,8 @@ The Testing Strategy would involve testing the application Manually and Automati
 4. System Testing: The application will be tested in the QA/Pre prod environment leveraging valid user credentials. It will also be tested with other Application components to ensure
 5. Test Case Management: All the Test cases will be tracked in JIRA
 
-### Functional Positive 
-Test scenarios:
+### Functional Testing  
+**Positive Test scenarios:**
 1. API should return HTTP 200 when called from the Rest client
 2. Ensure the Response covers all the Stations on each line
 3. Ensure the structure of each object has all the 3 Data points:
@@ -34,12 +34,12 @@ Test scenarios:
    4. The list of Adjacent stations 
 4. Test the result for accuracy of Data
 5. Verify the stations with 1,2,3,4 adjacent stations reflect correct data
-   1. Adjacent: Alewife, 
-   2. Adjacent: Central, 
-   3. Adjacent: Lechmere, 
-   4. Adjacent stations: Downtown Crossing
+   1. 1 Adjacent: Alewife, 
+   2. 2 Adjacent: Central, 
+   3. 3 Adjacent: Lechmere, 
+   4. 4 Adjacent stations: Downtown Crossing
 
-### Functional Negative
+**Negative Test Scenarios:** 
 The scope for Negative testing is limited 'coz the Application currently just exposes 1 API that takes a GET call'
 However, in the event the application takes the stopId as an additional parameter to return the info per station:
 1. Ensure the Application handles scenarios where the stopId is Invalid i.e. alpha numeric
@@ -53,7 +53,10 @@ However, in the event the application takes the stopId as an additional paramete
 1. Make multiple parallel calls to the API to benchmark the performance time
 
 ### Automation
-Automated Testing: Using a framework like Rest Assured to test the APIs for different Data points. The Data points will include different stations with 1,2,3, adjacent Stations etc.
+Using a framework like Rest Assured to test the APIs for different Data points. The Data points will include different stations with 1,2,3, adjacent Stations etc.
+1. Sanity Suite covering all P1 Test cases
+2. Regression Suite covering the Automatable Test Cases
+3. Performance Testing
 
 ### Test Data Strategy
 Live MBTA Data will be used for Testing
@@ -66,6 +69,16 @@ Live MBTA Data will be used for Testing
 ## Risks and Mitigation
 In a scenario if the MBTA API changes, Or the Lines get updated due to new stations or Updates, the caching logic will need to be updated
 
+## Tools
+Tools used for the project:
+1. Manual Testing: Postman / Insomnia
+2. Automation: Test NG framework, Rest Assured
+3. Performance: JMeter, Gatlin
+4. Merge Gate scheduling: Jenkins, Git Action
+5. Source Control: Git
+6. Test case Management: JIRA
+7. Defect Management: JIRA
+
 ## Observability
 1. Ensure the application logs all requests with response times and status codes. Monitor via Log monitoring via  Kibana/ Elastic Search
 2. Monitor the following metrics for the App when deployed in production (Prometheus + Grafana):
@@ -73,12 +86,12 @@ In a scenario if the MBTA API changes, Or the Lines get updated due to new stati
    2. Error Count
    3. CPU/Memory
 4. Health Check
-   5. External MBTA API connectivity
+5. External MBTA API connectivity
    
 ## Release Process
 1. Code changes should undergo peer review and static analysis .
-2. All tests (unit, functional, integration) must pass in CI/CD pipeline.
-3. Smoke test suite should be executed successfully on Pre-prod before production deployment.
+2. All Manual and Automated tests (unit, functional, integration) must pass in CI/CD pipeline.
+3. Automated Smoke test suite should be executed successfully on Pre-prod before production deployment.
 4. Version tagging and changelog updates for every release.
 5. Rollback strategy documented and tested (manual or automated).
 
