@@ -15,9 +15,8 @@ Make sure you have the following installed:
 
 ### Check Installation
 
-```bash
-java -version
-mvn -v
+1. java -version
+2. mvn -v
 
 ### Steps
 1. **Clone the Repository**
@@ -33,7 +32,7 @@ mvn -v
 
 4. Test the API.
    Open a browser or a Rest client like Postman and execute the following commands:
-   http://localhost:8080/api/stations/lines?routeID=70159
+   http://localhost:8080/api/stations/
 
 
 Assumptions and Design Decisions:

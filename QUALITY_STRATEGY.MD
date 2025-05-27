@@ -1,13 +1,13 @@
 Test Strategy Document
 
 ## Overview
-MBTA Station Info project aims to act as an interface between the End user and the MBTA API Gateway. The objective is to fetch some of the information about each station and present it to the user when accessed via the API layer.
+MBTA Station Info project aims to act as an interface between the End user and the MBTA API Gateway. The objective is to fetch information about each station and present it to the user when accessed via the API layer.
 ## Objectives
 The objective of this Test strategy document is to ensure the MBTA Station Info Application functions as mentioned in the Scope. The document covers the overall Test strategy for testing the application.  
 ## Scope
 The scope of the project includes:
-1. Testing the application via the published API
-2. Testing different conditions for the 3 data points for each station
+1. Test the application via the published API
+2. Test different conditions for the 3 data points for each station
 3. Data Validation of the Response to certify the accuracy of the Data
 4. Error Handling
 
@@ -17,8 +17,8 @@ The scope of the project includes:
 ## Testing Strategy
 The testing strategy involves a combination of manual and automated testing using appropriate tools and frameworks. 
 1. Unit Testing: The code level testing will be covered by Unit testing 
-2. Manual Testing: Using a Rest client like Postman / Insomnia to certify the P1 tests that certify the Acceptance criteria for the project.
-2. Automated Testing: Using a framework like Rest Assured to test the APIs for different Data points. The Data points will include different stations with 1,2,3, adjacent Stations etc.
+2. Manual Testing: Use a Rest client like Postman / Insomnia to certify the Acceptance criteria for the project.
+2. Automated Testing: Use a framework like Rest Assured to test the APIs for different Data points. The Data points will include different stations with 1,2,3, adjacent Stations etc.
 3. The automated tests will be packaged in Test suites which will be configured to run against the Application at scheduled times to ensure Application reliability.
 4. System Testing: The application will be tested in the QA/Pre prod environment leveraging valid user credentials. It will also be tested with other Application components to ensure
 5. Test Case Management: All the Test cases will be tracked in JIRA
