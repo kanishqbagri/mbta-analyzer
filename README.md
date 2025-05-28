@@ -33,9 +33,10 @@ Make sure you have the following installed:
 4. Test the API.
    Open a browser or a Rest client like Postman and execute the following commands:
    http://localhost:8080/api/stations/
+   http://localhost:8080/api/stations/stopid= (TBD)
 
 
-Assumptions and Design Decisions:
+## Assumptions and Design Decisions:
 1. The Application would leverage a published Data that doesnt change frequently for the list of Requirements. Some part of the Application that relies on the List of Stations etc is cached and referenced to avoid mutiple API calls.
 2. In order to keep this application light the data that is fetched, and processed is kept in the memory instead of adding support for a more permamnent persistent store
 3. The application is designed to be a single threaded application with no concurrency
@@ -48,10 +49,14 @@ Technical Design:
 8. Java and Springboot chosen for quick setup, and REST friendly architecture. Also due to familiarity
 9. HTTP Client: Java's native HTTP client and jackson parser are used to fetch and parse API responses
 
-Challenges during Design and Implementation:
-MBTA API filtering limits: The API doesn't provide the adjacency directly. I derived it from ordered stop sequences, and schedules. 
-Unclear documentation
+## Challenges during Design and Implementation:
+1. MBTA API filtering limits: The API doesn't provide the adjacency directly. I derived it from ordered stop sequences, and schedules. 
+2. Performance issue parsing the API response and building the datastructure of the map. Resolved the issue by intorducing in memory caching during Springboot App Start up  
+3. Unclear documentation from MBTA API
 
-Future Improvements:
-Use of Logger Framework for logging, instead of System Out
-Modularize 
+## Future Improvements:
+1. Versioning of Controller, Service, to introduce extensibility
+2. Use of Logger Framework for logging, instead of System Out 
+3. Add new APIs to support fetching Station Info per station
+3. Modularize the code components
+4. Code Clean up
