@@ -19,6 +19,9 @@ import java.util.Set;
 
 import static com.ss.stationapi.service.StationService.BASE_URL;
 
+/**
+ * Entry point for the Spring Boot application that loads and caches MBTA station data.
+ */
 @SpringBootApplication
 public class StationApiApplication {
 	private final HttpClient client = HttpClient.newHttpClient();
@@ -28,6 +31,11 @@ public class StationApiApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(StationApiApplication.class, args);
 	}
+	
+ /**
+     * Method annotated with @PostConstruct is executed after the Spring context is initialized.
+     * This is a good place to trigger setup logic such as loading and caching data.
+     */
     @PostConstruct
 	public void startSetUp()
 	{
