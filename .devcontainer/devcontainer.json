@@ -1,19 +1,11 @@
 {
-  "name": "Java Spring Boot Dev",
+  "name": "Java 17 with Maven",
   "image": "mcr.microsoft.com/devcontainers/java:17",
-  "features": {
-    "ghcr.io/devcontainers/features/java:1": {
-      "version": "17"
-    },
-    "ghcr.io/devcontainers/features/maven:1": {}
-  },
-  "postCreateCommand": "mvn clean install",
   "customizations": {
     "vscode": {
       "extensions": [
         "vscjava.vscode-java-pack",
-        "pivotal.vscode-spring-boot",
-        "eamodio.gitlens"
+        "vscjava.vscode-maven"
       ]
     }
   }
