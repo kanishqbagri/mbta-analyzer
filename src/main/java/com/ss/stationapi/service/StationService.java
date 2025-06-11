@@ -34,14 +34,17 @@ public class StationService {
     public void init() {
         if (!initialized) {
             System.out.println("Initializing StationService...");
+            System.out.println("Fetching all routes and stops...");
             loadStationsAndRoutes(); // Populates all StationInfo attributes
+            System.out.println("Loading adjacency for all lines...");
             loadAdjacency();         // Populates neighbors for each station
             initialized = true;
         }
     }
 
+    
     // Loads stations and their lines, caches in stationById and stopIdToLines
-    private void loadStationsAndRoutes() {
+    public void loadStationsAndRoutes() {
         try {
             stopIdToLines = fetchAllRoutes();
             HttpRequest request = HttpRequest.newBuilder()
@@ -73,7 +76,7 @@ public class StationService {
     }
 
     // Loads adjacency info for all lines, populates neighbors in stationById
-    private void loadAdjacency() {
+    public void loadAdjacency() {
         try {
             for (String lineId : lines) {
                 String url = BASE_URL + "schedules?filter[route]=" + lineId + "&filter[direction_id]=0&sort=stop_sequence";
@@ -156,6 +159,21 @@ public class StationService {
             }
         }
         return stopIdToLines;
+    }
+
+public static void main(String[] args) {
+        StationService service = new StationService();
+        service.init(); // Initialize the service to load data
+        // Example usage
+        Map<String, StationInfo> stations = service.getStationInfo_v2();
+        System.out.println("Total stations loaded: " + stations.size());
+        StationInfo station = service.getStationInfoById("place-sstat");
+        if (station != null) {
+            System.out.println("Station Name: " + station.getName());
+            System.out.println("Lines: " + station.getLines());
+        } else {
+            System.out.println("Station not found.");
+        }
     }
 }
 
