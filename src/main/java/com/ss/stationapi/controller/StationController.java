@@ -11,8 +11,9 @@ import java.util.Map;
 import java.util.Set;
 
 @RestController
-@RequestMapping("/api/stations")
+@RequestMapping("/api")
 public class StationController {
+
 @Autowired
     private StationService svc;
 
@@ -20,21 +21,38 @@ public class StationController {
      * GET /api/stations
      * returns a map of all rail stops (id → StationInfo)
      */
-    @GetMapping
+ 
+    @GetMapping("/stations")
     public ResponseEntity<Map<String, StationInfo>> getAllAllStationInfo() {
-        Map<String, StationInfo> all = svc.getStationInfo();
+        Map<String, StationInfo> all = svc.getStationInfo_v2();
         return ResponseEntity.ok(all);
+    }
+
+
+
+ /**
+     * GET /api/stations/{stopId}
+     * Returns the StationInfo for the given stopId, or 404 if not found.
+     */
+ 
+    @GetMapping("/stations/{stopId}")
+    public ResponseEntity<StationInfo> getStationById(@PathVariable String stopId) {
+        StationInfo info = svc.getStationInfoById(stopId);
+        if (info == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(info);
     }
 
     /**
      * GET /API/stations/lines
      * returns a list of Lines for the station provided. Accepts RouteId of the Station
      * **/
-    @GetMapping("/lines")
-    public ResponseEntity<Set<String>> getLinesByStation(@RequestParam("routeID") String routeID){
-    Set<String> listOfLines= svc.linesByStation(routeID);
-    return ResponseEntity.ok(listOfLines);
-    }
+    // @GetMapping("/lines")
+    // public ResponseEntity<Set<String>> getLinesByStation(@RequestParam("routeID") String routeID){
+    // Set<String> listOfLines= svc.linesByStation(routeID);
+    // return ResponseEntity.ok(listOfLines);
+    // }
 
 //    @GetMapping
 //    public ResponseEntity<Map<String, StationInfo>> getAdjacentStops(){
