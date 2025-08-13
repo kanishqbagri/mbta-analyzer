@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/v1")
 public class StationController {
 
 @Autowired
@@ -42,6 +42,19 @@ public class StationController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(info);
+    }
+
+    /**
+     * GET /api/v1/stations/{stopId}/lines
+     * Returns the set of line IDs that serve the given stopId.
+     */
+    @GetMapping("/stations/{stopId}/lines")
+    public ResponseEntity<Set<String>> getLinesByStation(@PathVariable("stopId") String stopId) {
+        Set<String> listOfLines = svc.linesByStation_v2(stopId);
+        if (listOfLines == null || listOfLines.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(listOfLines);
     }
 
     /**
