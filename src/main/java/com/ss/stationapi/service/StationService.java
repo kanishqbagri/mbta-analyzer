@@ -114,11 +114,15 @@ public class StationService {
             if (currentStation == null) continue;
             if (i > 0) {
                 String prevId = orderedStops.get(i - 1);
-                currentStation.addNeighbor(prevId, line);
+                StationInfo prevStation = stationById.get(prevId);
+                String prevName = (prevStation != null) ? prevStation.getName() : null;
+                currentStation.addNeighbor(prevId, prevName, line);
             }
             if (i < orderedStops.size() - 1) {
                 String nextId = orderedStops.get(i + 1);
-                currentStation.addNeighbor(nextId, line);
+                StationInfo nextStation = stationById.get(nextId);
+                String nextName = (nextStation != null) ? nextStation.getName() : null;
+                currentStation.addNeighbor(nextId, nextName, line);
             }
         }
     }
