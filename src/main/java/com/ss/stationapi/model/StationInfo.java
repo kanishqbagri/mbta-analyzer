@@ -69,14 +69,25 @@ public class StationInfo {
      * @param line The transit line that connects the current station to the neighbor.
      */
     public void addNeighbor(String neighborId, String line) {
+        addNeighbor(neighborId, null, line);
+    }
+
+    /**
+     * Adds a neighbor to the current station with a provided neighbor name.
+     * If the neighbor already exists, updates the name if it is not set and adds the line.
+     */
+    public void addNeighbor(String neighborId, String neighborName, String line) {
         for (NeighborInfo neighbor : neighbors) {
             if (neighbor.getStationId().equals(neighborId)) {
+                if (neighbor.getName() == null && neighborName != null) {
+                    neighbor.setName(neighborName);
+                }
                 neighbor.addLine(line);
                 return;
             }
         }
         // If not found, add new neighbor
-        NeighborInfo newNeighbor = new NeighborInfo(neighborId);
+        NeighborInfo newNeighbor = new NeighborInfo(neighborId, neighborName);
         newNeighbor.addLine(line);
         neighbors.add(newNeighbor);
     }

@@ -12,6 +12,14 @@ public class NeighborInfo {
         this.stationId = stationId;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public Set<String> getLines() {
         return lines;
     }
@@ -21,10 +29,16 @@ public class NeighborInfo {
     }
 
     private String stationId;
+    private String name;
     private Set<String> lines = new HashSet<>();
 
     public NeighborInfo(String stationId) {
         this.stationId = stationId;
+    }
+
+    public NeighborInfo(String stationId, String name) {
+        this.stationId = stationId;
+        this.name = name;
     }
 
     public void addLine(String line) {
