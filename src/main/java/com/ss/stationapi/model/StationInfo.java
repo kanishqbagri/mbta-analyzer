@@ -54,7 +54,20 @@ public class StationInfo {
     public Set<String> getLines() {
         return lines;
     }
+
+    // List to store neighbor stations of the current station.
+// Each neighbor is represented by a NeighborInfo object which contains the station ID and lines connecting to it.
     private List<NeighborInfo> neighbors = new ArrayList<>();
+    
+        /**
+     * Adds a neighbor to the current station.
+     * 
+     * If the neighbor already exists in the list, the line is added to the existing NeighborInfo.
+     * If the neighbor does not exist, a new NeighborInfo is created and added to the list.
+     * 
+     * @param neighborId The station ID of the neighboring station.
+     * @param line The transit line that connects the current station to the neighbor.
+     */
     public void addNeighbor(String neighborId, String line) {
         for (NeighborInfo neighbor : neighbors) {
             if (neighbor.getStationId().equals(neighborId)) {

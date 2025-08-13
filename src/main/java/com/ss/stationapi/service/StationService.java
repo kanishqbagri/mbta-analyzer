@@ -23,224 +23,157 @@ public class StationService {
     public static final String BASE_URL = "https://api-v3.mbta.com/";
     private static final HttpClient client = HttpClient.newHttpClient();
     private static final ObjectMapper mapper = new ObjectMapper();
-    private static final List<String> lines = Arrays.asList("Red", "Blue", "Orange", "Green-B", "Green-C");
-    private static final Map<String, Set<String>> adjacencyMap = new HashMap<>();
-    private static Map<String, StationInfo> stationById = null;
+    private static final List<String> lines = Arrays.asList("Red", "Blue", "Orange", "Mattapan", "Green-B", "Green-C", "Green-D", "Green-E");
+
+    // Caches
+    private static Map<String, StationInfo> stationById = new HashMap<>();
+    private static Map<String, Set<String>> stopIdToLines = new HashMap<>();
+    private static boolean initialized = false;
 
     @PostConstruct
     public void init() {
-        System.out.println("Initializing StationService...");
-
-        getStationInfo();     // Step 1: Load all station info
-//        getAdjacentStops1();    // Step 2: Now that data is loaded, process adjacent stops or other logic
+        if (!initialized) {
+            System.out.println("Initializing StationService...");
+            System.out.println("Fetching all routes and stops...");
+            loadStationsAndRoutes(); // Populates all StationInfo attributes
+            System.out.println("Loading adjacency for all lines...");
+            loadAdjacency();         // Populates neighbors for each station
+            initialized = true;
+        }
     }
-    public StationService() {
 
-    }
-
-
-    //API to fetch the Name, Latitude and Longitude of the Stations maps to the default API
-    public static Map<String, StationInfo> getStationInfo() {
-
+    
+    // Loads stations and their lines, caches in stationById and stopIdToLines
+    public void loadStationsAndRoutes() {
         try {
+            stopIdToLines = fetchAllRoutes();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(BASE_URL + "stops?filter[route_type]=0,1"))
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             JsonNode root = mapper.readTree(response.body()).get("data");
-            int size = root.size();
-            if (root == null || !root.isArray()) {
-                System.err.println("No 'data' array found in response.");
-                return null;
-            }
-            //Parsing the Station Response to build a list of Objects
-            stationById = new HashMap<>();
-            Map<String, Set<String>> stopIdToLines = getAllRoutes();
+            stationById.clear();
             for (JsonNode node : root) {
                 StationInfo station = new StationInfo();
                 String stopId = node.get("id").asText();
-                JsonNode parentNode = node.get("relationships").get("parent_station").get("data");
                 String stationId = node.path("relationships").path("parent_station").path("data").path("id").isMissingNode()
                         ? stopId
                         : node.path("relationships").path("parent_station").path("data").path("id").asText();
-
                 station.setName(node.get("attributes").get("name").asText());
-                station.setId(node.get("id").asText());
+                station.setId(stopId);
                 station.setLatitude(node.get("attributes").get("latitude").asDouble());
                 station.setLongitude(node.get("attributes").get("longitude").asDouble());
-
                 Set<String> lines = stopIdToLines.getOrDefault(stationId, new HashSet<>());
                 for (String line : lines) {
                     station.addLine(line);
                 }
-//                System.out.println("Station Name: " + station.getId());
-                stationById.put(station.getId(), station);
+                stationById.put(stopId, station);
             }
-            System.out.println("Size of the Map: " + stationById.size());
-
+            System.out.println("Loaded stations: " + stationById.size());
         } catch (Exception e) {
-            System.err.println("Error fetching info for stop " + ": " + e.getMessage());
+            System.err.println("Error loading stations/routes: " + e.getMessage());
         }
-        return stationById;
     }
 
-
-    // API call to fetch the Lines by a StopId:
-    public static Set<String> linesByStation(String stopId){
-        Set<String>  listOfLines = new HashSet();
-//        routeId=70159;
-        try {
-            String url = BASE_URL + "routes?filter[stop]=" +stopId;
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            JsonNode root = mapper.readTree(response.body()).get("data");
-            if (root != null && root.isArray())
-                for (JsonNode item : root) {
-                String lineId = item
-                        .path("relationships")
-                        .path("line")
-                        .path("data")
-                        .path("id")
-                        .asText();
-                    if (lineId != null && !lineId.isEmpty()) {
-                        listOfLines.add(lineId);
-                    }
-              }
-            System.out.println("List of Lines for : " + stopId + " " + listOfLines);
-
-        }
-        catch (Exception e) {
-            System.err.println("Error fetching stops for route " + stopId + ": " + e.getMessage());
-        }
-        return listOfLines;
-    }
-
-    // Fetch All Routes and create a Set of Routes to be used
-    private static Map<String, Set<String>> getAllRoutes(){
-        String url = BASE_URL + "routes?filter[type]=0,1";
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .build();
-        HttpResponse<String> response = null;
-        Set<String> lineSet = new HashSet<>();
-        Map<String, Set<String>> stopIdToLines = new HashMap<>();
-        try {
-            response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            JsonNode root = mapper.readTree(response.body()).get("data");
-            for(JsonNode node : root){
-                lineSet.add(node.get("id").asText());
-            }
-            System.out.println("Size of lineSet: " + lineSet.size());
-            System.out.println(lineSet);
-
-            // For each Line in LineSet, capture all the Stops on each line
-
-            for(String lineId: lineSet){
-                String stopsUrl = BASE_URL + "stops?filter[route]=" + lineId;
-                HttpRequest request_stops = HttpRequest.newBuilder()
-                        .uri(URI.create(stopsUrl))
-                        .build();
-                HttpResponse<String> response_stops = null;
-
-
-                response_stops = client.send(request_stops, HttpResponse.BodyHandlers.ofString());
-                JsonNode root2 = mapper.readTree(response_stops.body()).get("data");
-                for (JsonNode node : root2) {
-                    String stationId = node.get("id").asText();
-                    stopIdToLines.computeIfAbsent(stationId, k -> new HashSet<>()).add(lineId); // Add current route/line to this station
-                }
-            }
-            System.out.println("place-boyls -> " + stopIdToLines.get("place-boyls"));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
-        return stopIdToLines;
-    }
-
-
-//    private static Map<String, StationInfo> getAdjacentStops1(String route) {
-    private static void getAdjacentStops1() {
-        System.out.println("Processing adjacent stops for " + stationById.size() + " stations.");
-        https://api-v3.mbta.com/schedules?include=stop&sort=stop_sequence&filter[route]=
-        // Calling the Route API, with filters and order
-
+    // Loads adjacency info for all lines, populates neighbors in stationById
+    public void loadAdjacency() {
         try {
             for (String lineId : lines) {
-//            String lineId = "Red";
                 String url = BASE_URL + "schedules?filter[route]=" + lineId + "&filter[direction_id]=0&sort=stop_sequence";
                 HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).build();
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
                 JsonNode root = mapper.readTree(response.body());
                 Set<String> stopIds = new LinkedHashSet<>();
-
                 for (JsonNode node : root.path("data")) {
                     JsonNode stopIdNode = node.path("relationships").path("stop").path("data").path("id");
                     if (!stopIdNode.isMissingNode()) {
                         stopIds.add(stopIdNode.asText());
                     }
                 }
-                Map<String, String> StopIdToNameMap = new HashMap<>();
-                System.out.println("Size of Stops Ids Map on the Line: " + stopIds.size());
-                for (String stops : stopIds) {
-                    StationInfo s1 = stationById.get(stops);
-                    StopIdToNameMap.put(stops, s1.getName());
-                    System.out.println(stops + " -- " + s1.getName());
-                }
-//            System.out.println(StopIdToNameMap);
-// Populate the Adjacent Map, with info on the Neighbor stations
-            populateNeighbors(stopIds, lineId, stationById);
+                populateNeighbors(stopIds, lineId, stationById);
             }
-        }
-        catch (Exception e){
-            System.err.println("Error fetching stops for route " + ": " + e.getMessage());
+            System.out.println("Adjacency loaded.");
+        } catch (Exception e) {
+            System.err.println("Error loading adjacency: " + e.getMessage());
         }
     }
 
-    public static void populateNeighbors(Set<String> stopIds, String line, Map<String, StationInfo> stationById) {
+    /**
+     * Populates neighboring (adjacent) stations for each stop on a given line.
+     * Neighbors are determined based on their order in the route's stop sequence.
+     */
+    public void populateNeighbors(Set<String> stopIds, String line, Map<String, StationInfo> stationById) {
         List<String> orderedStops = new ArrayList<>(stopIds);
         for (int i = 0; i < orderedStops.size(); i++) {
             String currentId = orderedStops.get(i);
             StationInfo currentStation = stationById.get(currentId);
             if (currentStation == null) continue;
-
             if (i > 0) {
                 String prevId = orderedStops.get(i - 1);
                 currentStation.addNeighbor(prevId, line);
             }
-
             if (i < orderedStops.size() - 1) {
                 String nextId = orderedStops.get(i + 1);
                 currentStation.addNeighbor(nextId, line);
             }
         }
     }
-    public static HttpClient getClient() {
-        return client;
+
+    // Only returns cached data, does not fetch from MBTA
+    public  Map<String, StationInfo> getStationInfo_v2() {
+        return stationById;
     }
 
-    public static void main(String[] args){
+    // Only returns cached data, does not fetch from MBTA
+    public  Set<String> linesByStation_v2(String stopId) {
+        return stopIdToLines.getOrDefault(stopId, Collections.emptySet());
+    }
+
+     // Returns a single StationInfo by stopId, or null if not found
+    public  StationInfo getStationInfoById(String stopId) {
+        return stationById.get(stopId);
+    }
+
+
+    // Fetches all MBTA light and heavy rail routes and maps each stop/station ID to the set of line IDs
+    private  Map<String, Set<String>> fetchAllRoutes() throws IOException, InterruptedException {
+        String url = BASE_URL + "routes?filter[type]=0,1";
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonNode root = mapper.readTree(response.body()).get("data");
+        Set<String> lineSet = new HashSet<>();
+        Map<String, Set<String>> stopIdToLines = new HashMap<>();
+        for (JsonNode node : root) {
+            lineSet.add(node.get("id").asText());
+        }
+        for (String lineId : lineSet) {
+            String stopsUrl = BASE_URL + "stops?filter[route]=" + lineId;
+            HttpRequest request_stops = HttpRequest.newBuilder().uri(URI.create(stopsUrl)).build();
+            // Fetch stops for each line
+            HttpResponse<String> response_stops = client.send(request_stops, HttpResponse.BodyHandlers.ofString());
+            JsonNode root2 = mapper.readTree(response_stops.body()).get("data");
+            System.out.println("Processing line: " + lineId + " with " + root2.size() + " stops");
+            for (JsonNode node2 : root2) {
+                String stationId = node2.get("id").asText();
+                stopIdToLines.computeIfAbsent(stationId, k -> new HashSet<>()).add(lineId);
+            }
+        }
+        return stopIdToLines;
+    }
+
+public static void main(String[] args) {
         StationService service = new StationService();
-        service.init();
-        System.out.println("Test ***");
-//        getAllRoutes();
-//        getStationInfo(); // Fetch Station Info
-//        linesByStation(70159); // Fetch Line info for the station
-        System.out.println("Stations on a Line: Red");
-        getAdjacentStops1();
-        //        getAdjacentStops();
+        service.init(); // Initialize the service to load data
+        // Example usage
+        Map<String, StationInfo> stations = service.getStationInfo_v2();
+        System.out.println("Total stations loaded: " + stations.size());
+        StationInfo station = service.getStationInfoById("place-sstat");
+        if (station != null) {
+            System.out.println("Station Name: " + station.getName());
+            System.out.println("Lines: " + station.getLines());
+        } else {
+            System.out.println("Station not found.");
+        }
     }
 }
 
-//class StationInfo {
-//    public String id;
-//    public String name;
-//    public double latitude;
-//    public double longitude;
-//    public String description;
-//}
