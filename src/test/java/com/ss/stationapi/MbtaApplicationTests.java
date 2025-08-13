@@ -30,7 +30,7 @@ class MbtaApplicationTests {
 
     @Test
     void testGetAllStations() {
-        ResponseEntity<Map> response = restTemplate.getForEntity("/api/stations", Map.class);
+        ResponseEntity<Map> response = restTemplate.getForEntity("/api/v1/stations", Map.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().size()).isGreaterThan(0);
@@ -40,7 +40,7 @@ class MbtaApplicationTests {
     void testGetStationById_found() {
         // Replace "place-alfcl" with a known stopId in your dataset
         String stopId = "place-alfcl";
-        ResponseEntity<StationInfo> response = restTemplate.getForEntity("/api/stations/" + stopId, StationInfo.class);
+        ResponseEntity<StationInfo> response = restTemplate.getForEntity("/api/v1/stations/" + stopId, StationInfo.class);
         // Accept 200 or 404 depending on data load
         assertThat(response.getStatusCode()).isIn(HttpStatus.OK, HttpStatus.NOT_FOUND);
         if (response.getStatusCode() == HttpStatus.OK) {
@@ -52,7 +52,7 @@ class MbtaApplicationTests {
     @Test
     void testGetStationById_notFound() {
         String stopId = "nonexistent-stop";
-        ResponseEntity<StationInfo> response = restTemplate.getForEntity("/api/stations/" + stopId, StationInfo.class);
+        ResponseEntity<StationInfo> response = restTemplate.getForEntity("/api/v1/stations/" + stopId, StationInfo.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 }

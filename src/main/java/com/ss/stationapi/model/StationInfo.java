@@ -80,4 +80,12 @@ public class StationInfo {
         newNeighbor.addLine(line);
         neighbors.add(newNeighbor);
     }
+
+    public List<NeighborInfo> getNeighbors() {
+        return neighbors;
+    }
+
+    public void setNeighbors(List<NeighborInfo> neighbors) {
+        this.neighbors = (neighbors == null) ? new ArrayList<>() : neighbors;
+    }
 }

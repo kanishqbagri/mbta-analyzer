@@ -4,31 +4,30 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 import com.ss.stationapi.model.StationInfo;
 
-import javax.sound.sampled.Line;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.*;
-
 
 @Component
 public class StationService {
     public static final String BASE_URL = "https://api-v3.mbta.com/";
-    private static final HttpClient client = HttpClient.newHttpClient();
-    private static final ObjectMapper mapper = new ObjectMapper();
-    private static final List<String> lines = Arrays.asList("Red", "Blue", "Orange", "Mattapan", "Green-B", "Green-C", "Green-D", "Green-E");
+    private final HttpClient client = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .build();
+    private final ObjectMapper mapper = new ObjectMapper();
 
-    // Caches
-    private static Map<String, StationInfo> stationById = new HashMap<>();
-    private static Map<String, Set<String>> stopIdToLines = new HashMap<>();
-    private static boolean initialized = false;
+    // Caches (instance fields)
+    private Map<String, StationInfo> stationById = new HashMap<>();
+    private Map<String, Set<String>> stopIdToLines = new HashMap<>();
+    private Set<String> discoveredLineIds = new HashSet<>();
+    private volatile boolean initialized = false;
 
     @PostConstruct
     public void init() {
@@ -42,13 +41,13 @@ public class StationService {
         }
     }
 
-    
     // Loads stations and their lines, caches in stationById and stopIdToLines
     public void loadStationsAndRoutes() {
         try {
             stopIdToLines = fetchAllRoutes();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(BASE_URL + "stops?filter[route_type]=0,1"))
+                    .timeout(Duration.ofSeconds(10))
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             JsonNode root = mapper.readTree(response.body()).get("data");
@@ -63,8 +62,8 @@ public class StationService {
                 station.setId(stopId);
                 station.setLatitude(node.get("attributes").get("latitude").asDouble());
                 station.setLongitude(node.get("attributes").get("longitude").asDouble());
-                Set<String> lines = stopIdToLines.getOrDefault(stationId, new HashSet<>());
-                for (String line : lines) {
+                Set<String> linesForStop = stopIdToLines.getOrDefault(stopId, new HashSet<>());
+                for (String line : linesForStop) {
                     station.addLine(line);
                 }
                 stationById.put(stopId, station);
@@ -78,19 +77,24 @@ public class StationService {
     // Loads adjacency info for all lines, populates neighbors in stationById
     public void loadAdjacency() {
         try {
-            for (String lineId : lines) {
-                String url = BASE_URL + "schedules?filter[route]=" + lineId + "&filter[direction_id]=0&sort=stop_sequence";
-                HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).build();
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                JsonNode root = mapper.readTree(response.body());
-                Set<String> stopIds = new LinkedHashSet<>();
-                for (JsonNode node : root.path("data")) {
-                    JsonNode stopIdNode = node.path("relationships").path("stop").path("data").path("id");
-                    if (!stopIdNode.isMissingNode()) {
-                        stopIds.add(stopIdNode.asText());
+            for (String lineId : discoveredLineIds) {
+                Set<String> orderedStops = new LinkedHashSet<>();
+                for (int direction = 0; direction <= 1; direction++) {
+                    String url = BASE_URL + "schedules?filter[route]=" + lineId + "&filter[direction_id]=" + direction + "&sort=stop_sequence";
+                    HttpRequest request = HttpRequest.newBuilder()
+                            .uri(URI.create(url))
+                            .timeout(Duration.ofSeconds(10))
+                            .build();
+                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                    JsonNode root = mapper.readTree(response.body());
+                    for (JsonNode node : root.path("data")) {
+                        JsonNode stopIdNode = node.path("relationships").path("stop").path("data").path("id");
+                        if (!stopIdNode.isMissingNode()) {
+                            orderedStops.add(stopIdNode.asText());
+                        }
                     }
                 }
-                populateNeighbors(stopIds, lineId, stationById);
+                populateNeighbors(orderedStops, lineId, stationById);
             }
             System.out.println("Adjacency loaded.");
         } catch (Exception e) {
@@ -120,25 +124,27 @@ public class StationService {
     }
 
     // Only returns cached data, does not fetch from MBTA
-    public  Map<String, StationInfo> getStationInfo_v2() {
+    public Map<String, StationInfo> getStationInfo_v2() {
         return stationById;
     }
 
     // Only returns cached data, does not fetch from MBTA
-    public  Set<String> linesByStation_v2(String stopId) {
+    public Set<String> linesByStation_v2(String stopId) {
         return stopIdToLines.getOrDefault(stopId, Collections.emptySet());
     }
 
      // Returns a single StationInfo by stopId, or null if not found
-    public  StationInfo getStationInfoById(String stopId) {
+    public StationInfo getStationInfoById(String stopId) {
         return stationById.get(stopId);
     }
 
-
     // Fetches all MBTA light and heavy rail routes and maps each stop/station ID to the set of line IDs
-    private  Map<String, Set<String>> fetchAllRoutes() throws IOException, InterruptedException {
+    private Map<String, Set<String>> fetchAllRoutes() throws IOException, InterruptedException {
         String url = BASE_URL + "routes?filter[type]=0,1";
-        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).build();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofSeconds(10))
+                .build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         JsonNode root = mapper.readTree(response.body()).get("data");
         Set<String> lineSet = new HashSet<>();
@@ -146,34 +152,21 @@ public class StationService {
         for (JsonNode node : root) {
             lineSet.add(node.get("id").asText());
         }
+        this.discoveredLineIds = lineSet;
         for (String lineId : lineSet) {
             String stopsUrl = BASE_URL + "stops?filter[route]=" + lineId;
-            HttpRequest request_stops = HttpRequest.newBuilder().uri(URI.create(stopsUrl)).build();
-            // Fetch stops for each line
-            HttpResponse<String> response_stops = client.send(request_stops, HttpResponse.BodyHandlers.ofString());
-            JsonNode root2 = mapper.readTree(response_stops.body()).get("data");
-            System.out.println("Processing line: " + lineId + " with " + root2.size() + " stops");
+            HttpRequest requestStops = HttpRequest.newBuilder()
+                    .uri(URI.create(stopsUrl))
+                    .timeout(Duration.ofSeconds(10))
+                    .build();
+            HttpResponse<String> responseStops = client.send(requestStops, HttpResponse.BodyHandlers.ofString());
+            JsonNode root2 = mapper.readTree(responseStops.body()).get("data");
             for (JsonNode node2 : root2) {
                 String stationId = node2.get("id").asText();
                 stopIdToLines.computeIfAbsent(stationId, k -> new HashSet<>()).add(lineId);
             }
         }
         return stopIdToLines;
-    }
-
-public static void main(String[] args) {
-        StationService service = new StationService();
-        service.init(); // Initialize the service to load data
-        // Example usage
-        Map<String, StationInfo> stations = service.getStationInfo_v2();
-        System.out.println("Total stations loaded: " + stations.size());
-        StationInfo station = service.getStationInfoById("place-sstat");
-        if (station != null) {
-            System.out.println("Station Name: " + station.getName());
-            System.out.println("Lines: " + station.getLines());
-        } else {
-            System.out.println("Station not found.");
-        }
     }
 }
 
